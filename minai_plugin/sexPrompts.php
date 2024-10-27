@@ -43,6 +43,8 @@ if(isset($scene)){
 
     $talkTo = "(talking to $targetToSpeak)";
     $enforceLength = "You MUST Respond with no more than two sentences.";
+
+    file_put_contents("my_logs.txt", "\nspeakStyle: $speakStyle\n", FILE_APPEND);
     switch($speakStyle) {
         case "dirty talk": {
             $GLOBALS["TEMPLATE_DIALOG"] = "{$GLOBALS["HERIKA_NAME"]} is using explicit and provocative language. {$GLOBALS["TEMPLATE_DIALOG"]} $talkTo $enforceLength";
