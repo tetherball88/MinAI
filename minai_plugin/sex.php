@@ -2,6 +2,12 @@
 require_once("util.php");
 $target = $GLOBALS["target"];
 
+
+file_put_contents("my_logs.txt", "\nIsSexActive:BEFORE: ".(IsSexActive() ? "true" : "false")."\n", FILE_APPEND);
+
+file_put_contents("my_logs.txt", "\nIsEnabled('PLAYER', 'enableAISex'): ".(IsEnabled("PLAYER", "enableAISex") ? "true" : "false")."\n", FILE_APPEND);
+file_put_contents("my_logs.txt", "\nIsRadiant(): ".(IsRadiant() ? "true" : "false")."\n", FILE_APPEND);
+
 if ((IsModEnabled("Sexlab") || IsModEnabled("Ostim")) && ((IsEnabled("PLAYER", "enableAISex") && IsRadiant()) || !IsRadiant())) {
     // Always enabled
     RegisterAction("ExtCmdMasturbate");
@@ -31,6 +37,8 @@ if ((IsModEnabled("Sexlab") || IsModEnabled("Ostim")) && ((IsEnabled("PLAYER", "
         RegisterAction("ExtCmdStartFingering");
         RegisterAction("ExtCmdStartCunnilingus");
     }
+    
+    file_put_contents("my_logs.txt", "\nIsSexActive: ".(IsSexActive() ? "true" : "false")."\n", FILE_APPEND);
     // Only enabled if already in a sex scene
     if (IsSexActive()) {
         RegisterAction("ExtCmdStartCuddleSex");
@@ -54,6 +62,7 @@ if ((IsModEnabled("Sexlab") || IsModEnabled("Ostim")) && ((IsEnabled("PLAYER", "
         RegisterAction("ExtCmdStartThighjob");
         RegisterAction("ExtCmdStartAggressive");
         RegisterAction("ExtCmdEndSex");
+        RegisterAction("ExtCmdInviteSex");
         // Speed control for OStim scenes 
         if (IsModEnabled("Ostim")) {
           RegisterAction("ExtCmdSpeedUpSex");
@@ -119,6 +128,25 @@ $GLOBALS["FUNCTIONS"][] = [
         ],
     ];
 $GLOBALS["FUNCRET"]["ExtCmdEndSex"]=$GLOBALS["GenericFuncRet"];
+
+$GLOBALS["F_NAMES"]["ExtCmdInviteSex"]="InviteSex";
+$GLOBALS["F_TRANSLATIONS"]["ExtCmdInviteSex"]="{$GLOBALS["HERIKA_NAME"]} invites #TARGET# to sex.";
+$GLOBALS["FUNCTIONS"][] = [
+        "name" => $GLOBALS["F_NAMES"]["ExtCmdInviteSex"],
+        "description" => $GLOBALS["F_TRANSLATIONS"]["ExtCmdInviteSex"],
+        "parameters" => [
+            "type" => "object",
+            "properties" => [
+                "target" => [
+                    "type" => "string",
+                    "description" => "Target NPC, Actor, or being",
+                    "enum" => $GLOBALS["FUNCTION_PARM_INSPECT"]
+                ]
+            ],
+            "required" => [],
+        ],
+    ];
+$GLOBALS["FUNCRET"]["ExtCmdInviteSex"]=$GLOBALS["GenericFuncRet"];
 
 /* $GLOBALS["F_NAMES"]["ExtCmdStartSexScene"]="StartSexScene";
 $GLOBALS["F_TRANSLATIONS"]["ExtCmdStartSexScene"]="Immediately engage in sexual activity with the target";

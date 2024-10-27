@@ -16,6 +16,7 @@ minai_DeviousStuff devious
 Actor PlayerRef
 minai_Config config
 minai_AmbientSexTalk ambientSexTalk
+minai_SexAwareness sexAwareness
 
 float lastSexTalk
 
@@ -35,6 +36,7 @@ Function Maintenance(minai_MainQuestController _main)
   aiff = (Self as Quest) as minai_AIFF
   devious = (Self as Quest) as minai_DeviousStuff
   ambientSexTalk = Game.GetFormFromFile(0x0E88, "MinAI.esp") as minai_AmbientSexTalk
+  sexAwareness = Game.GetFormFromFile(0x0E89, "MinAI.esp") as minai_SexAwareness
   config = Game.GetFormFromFile(0x0912, "MinAI.esp") as minai_Config
   if !config
     Main.Fatal("Could not load configuration - script version mismatch with esp")
@@ -60,7 +62,9 @@ Function Maintenance(minai_MainQuestController _main)
     
   slf = Game.GetFormFromFile(0xD62, "SexLab.esm") as SexLabFramework
 
+  MiscUtil.PrintConsole("sexAwareness: " + sexAwareness)
   ambientSexTalk.Maintenance(self, slf)
+  sexAwareness.Maintenance(self, slf)
   if slf != None
     Main.Info("Found Sexlab")
     bHasSexlab = True
@@ -124,6 +128,7 @@ Function Maintenance(minai_MainQuestController _main)
   
   aiff.RegisterAction("ExtCmdSpeedUpSex", "SpeedUpSex", "Sex Intensity", "Sex", 1, 3, 1, 1, 300, (bHasOstim))
   aiff.RegisterAction("ExtCmdSlowDownSex", "SlowDownSex", "Sex Intensity", "Sex", 1, 3, 1, 1, 300, (bHasOstim))
+  aiff.RegisterAction("ExtCmdInviteSex", "InviteSex", "Invite target to sex", "Sex", 1, 3, 1, 1, 300, (bHasOstim))
 
   ; Temporarily disabled until bugs can be addressed
   aiff.RegisterAction("ExtCmdFollow", "Follow", "Start Following Player", "General", 1, 0, 2, 5, 300, true)
@@ -737,6 +742,18 @@ Event CommandDispatcher(String speakerName,String  command, String parameter)
     StartFollow(akSpeaker, akTarget)
   elseif (command=="ExtCmdStopFollowing")
     EndFollow(akSpeaker)
+  elseif(command == "ExtCmdInviteSex")
+    MiscUtil.PrintConsole("ExtCmdInviteSex.")
+    actor ostimActor
+    actor invitee
+    if(OActor.GetSceneId(akSpeaker) >= 0)
+      ostimActor = akSpeaker
+      invitee = akTarget
+    else
+      ostimActor = akTarget
+      invitee = akSpeaker
+    endif
+    inviteToScene(ostimActor, invitee, ostimType)
   EndIf
 EndEvent
 
@@ -1322,6 +1339,7 @@ function onSexStart(int ThreadID, string framework)
   SetSexSceneState("on")
   UpdateThreadTable("startthread", framework, ThreadID)
   ambientSexTalk.OnSexStart(ThreadID, framework)
+  sexAwareness.onSexStart(framework)
 
   ; get actors to store random actor who will talk at the end. Doing it at start ensure that on sex end events we won't end up where in threads there are no actors anymore
   Actor[] actors
@@ -1388,3 +1406,19 @@ endfunction
 bool Function IsNSFW()
   return bHasSexlab || bHasOstim
 EndFunction
+
+function inviteToScene(actor ostimActor, actor invitee, string framework)
+  MiscUtil.PrintConsole("inviteToScene. " + ostimActor.getdisplayName() + ". " + invitee.getdisplayName())
+  if(framework == ostimType)
+    int currentThreadID = OActor.GetSceneID(ostimActor)
+    if(currentThreadID >= 0)
+      actor[] currentActors = OThread.getActors(currentThreadID)
+      OThread.Stop(currentThreadID)
+      while(OThread.isRunning(currentThreadID))
+        Utility.wait(0.2)
+      endwhile
+      currentActors = PapyrusUtil.PushActor(currentActors, invitee)
+      StartSexOrSwitchToGroup(currentActors, ostimActor)
+    endif
+  endif
+endfunction

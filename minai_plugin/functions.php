@@ -105,5 +105,7 @@ foreach ($commandsToPurge as $n) {
     unset($GLOBALS["ENABLED_FUNCTIONS"][$n]);
 }
 
+require_once("sexAwareness.php");
+
 
 ?>

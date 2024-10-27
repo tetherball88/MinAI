@@ -372,7 +372,8 @@ function getSexSceneContext() {
       "role"=>"user",
       "content"=>$prompt
     ];
-    array_push($GLOBALS["contextDataFull"], $contextItem);
+    $position = count($GLOBALS["contextDataFull"]) - 1;
+    array_splice($GLOBALS["contextDataFull"], $position, 0, [$contextItem]);
   }
 }
 

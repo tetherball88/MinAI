@@ -11,14 +11,16 @@ SexLabFramework slf = None
 minai_NPCRelations npcRelations
 
 ; delay between dected interactions. Low number will be firing to often when somebody sees someone else having ostim scene or somebody who is having ostim scene will always focus on somebody who is found them.
-float property detectedInteractionsCooldown = 30.0 auto
+float property detectedInteractionsCooldown = 20.0 auto
 ; Delay before pair of actors who already interacted on detection before they can interact again(if both actors are still present at scene)
-float property pairDetectedInteractionCooldown = 30.0 auto
+float property pairDetectedInteractionCooldown = 20.0 auto
 ; When was last detected interaction
 float prevDetectedInteractionTime = 0.0
 
 ; When somebody interacts on detection we want to put them on cooldown, otherwise they most likely will always interact
 int jDetectedInteractionsCooldownMap
+
+string framework
 
 function Maintenance(minai_Sex _sex, SexLabFramework _slf)
     config = Game.GetFormFromFile(0x0912, "MinAI.esp") as minai_Config
@@ -30,6 +32,35 @@ function Maintenance(minai_Sex _sex, SexLabFramework _slf)
     jDetectedInteractionsCooldownMap = JValue.releaseAndRetain(jDetectedInteractionsCooldownMap, JMap.object())
 endfunction
 
+function onSexStart(string localFramework)
+    ; TODO add config to enable/disable awareness
+    ; if(!config.enableAmbientComments)
+    ;     return
+    ; endif
+    Main.Info("SexAwareness:OnSexStart")
+    RegisterForSingleUpdate(10)
+
+    framework = localFramework
+endfunction
+
+function onSexEnd()
+    
+endfunction
+
+event OnUpdate()
+    bool frameworkIsRunning = false
+    if(framework == sex.ostimType)
+        frameworkIsRunning = OThread.GetThreadCount() > 0
+    elseif(framework == sex.sexlabType)
+        frameworkIsRunning = slf.IsRunning()
+    endif
+
+    if(frameworkIsRunning)
+        scanDetections()
+        RegisterForSingleUpdate(10)
+    endif
+endevent
+
 Function scanDetections()
     MiscUtil.PrintConsole("scanDetections")
     float scanDetectionsTs = Utility.GetCurrentRealTime()
@@ -37,9 +68,9 @@ Function scanDetections()
     int i = 0
     ; Maps npcs between each other who detected whom. Shape: {partner: [{observer: Actor, subject: Actor}], blood: [{observer: Actor, subject: Actor}], inlaw: [{observer: Actor, subject: Actor}], other: [{observer: Actor, subject: Actor}]}
     int jDetectedPairsMap = JValue.releaseAndRetain(jDetectedPairsMap, JMap.object())
-    ; JArray of Actors which are participating in sex scenes.
+    ; JArray of Actors which are participating in sex scenes. [Actor]
     int jOstimActorsNearby = JValue.releaseAndRetain(jOstimActorsNearby, JArray.object())
-    ; JArray of Actors who aren't in sex scenes
+    ; JArray of Actors who aren't in sex scenes. [Actor]
     int jNonOstimActorsNearby = JValue.releaseAndRetain(jNonOstimActorsNearby, JArray.object())
 
     while(i < actors.Length)
@@ -92,14 +123,18 @@ Function scanDetections()
     endwhile
     int pair = getPair(jDetectedPairsMap)
 
+    MiscUtil.PrintConsole("found pair: "+pair)
+
     if(pair > 0)
         actor observer = JMap.getForm(pair, "observer") as actor
         actor subject = JMap.getForm(pair, "subject") as actor
+
         interactionOnDetect(npcRelations.getRelations(observer, subject), observer, subject)
     endif
 EndFunction
 
 function interactionOnDetect(string type, actor observer, actor subject)
+    MiscUtil.PrintConsole("interactionOnDetect")
     if(Utility.GetCurrentRealTime() - prevDetectedInteractionTime <= detectedInteractionsCooldown)
         prevDetectedInteractionTime = Utility.GetCurrentRealTime()
         return

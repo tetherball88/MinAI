@@ -212,7 +212,7 @@ EndFunction
 
 Function Log(String str, string lvl)
   Debug.Trace("[minai (" + lvl + ")]: " + str)
-  ; MiscUtil.PrintConsole("[minai (" + lvl + ")]: " + str)
+  MiscUtil.PrintConsole("[minai (" + lvl + ")]: " + str)
 EndFunction
 
 Function Fatal(String str)
